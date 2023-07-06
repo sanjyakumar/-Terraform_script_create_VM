@@ -64,6 +64,31 @@ resource "aws_subnet" "terraform_demo_subnet_1" {
     }
 
 }
+# Create IAM role
+resource "aws_iam_role" "s3_access_role" {
+  name = "s3-access-role"
+
+  assume_role_policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "Service": "ec2.amazonaws.com"
+      },
+      "Action": "sts:AssumeRole"
+    }
+  ]
+}
+EOF
+}
+
+# Create S3 bucket
+resource "aws_s3_bucket" "example_bucket" {
+  bucket = "example1-bucket"  # Replace with your desired bucket name
+  policy      = "${file("policys3bucket.json")}"
+}
 
 output "aws_subnet" {
     value = aws_subnet.terraform_demo_subnet_1.id           
@@ -78,17 +103,9 @@ resource "aws_instance" "my_instance" {
   subnet_id = aws_subnet.terraform_demo_subnet_1.id
   count = 1                                                # Number of instance create 
   associate_public_ip_address = true
+  iam_instance_profile  = aws_iam_role.s3_access_role.name
 
   tags = {
     Name = "my-instance"                                   # Instance name 
-  }
-}
-
-# Create an S3 bucket
-resource "aws_s3_bucket" "my_bucket" {
-  bucket = "my-object-store-bucket"                       # your desired bucket name
-
-  tags = {
-    Name = "my-bucket"
   }
 }
